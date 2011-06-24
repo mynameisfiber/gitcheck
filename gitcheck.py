@@ -47,7 +47,7 @@ if __name__ == "__main__":
 
   while True:
     for repo in repos:
-      if repo.has_updates():
+      if repo.check_updates():
         for key, update in repo.get_new_updates():
           print update
           show_message(update["repo"], update["desc"])
