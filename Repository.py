@@ -1,6 +1,7 @@
 #!/bin/env python
 import os
 from hashlib import md5
+from time import time
 
 class Repository:
   def __init__(self, location, GIT_PATH="/usr/bin"):
@@ -38,8 +39,9 @@ class Repository:
             update = {}
             update["repo"] = self.name
             update["ref"] = "%s/%s"%(remote,head)
-            update["desc"]  = self.get_commit_desc(remote, head)[0]
-            update["desc"] = update["desc"][len(update["ref"])+3:].strip() #cleanup
+            update["desc-full"]  = self.get_commit_desc(remote, head)[0]
+            update["desc"] = update["desc-full"][len(update["ref"])+3:].strip() #cleanup
+            update["timestamp"] = time()
             update["new"] = True
             key = md5(update["desc"]).hexdigest()
 

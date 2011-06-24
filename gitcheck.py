@@ -27,11 +27,18 @@ def find_repo(folder, maxdepth=-1):
 
 def show_message(title, message,icon="git.svg"):
   icon = os.path.join(os.getcwd(),icon)
+  message = message.replace('&', '&amp;')
+  message = message.replace('<', '&lt;')
+  message = message.replace('>', '&gt;')
+
   msg = pynotify.Notification(title, 
                               message,
                               icon)
-  if not msg.show():
-    print "Could not display message: (%s) %s"%(title, message)
+  try:
+    if not msg.show():
+      print "Could not display message: (%s) %s"%(title, message)
+  except:
+    print "Error communicating with notification daemon"
                         
 
 if __name__ == "__main__":
@@ -50,5 +57,5 @@ if __name__ == "__main__":
       if repo.check_updates():
         for key, update in repo.get_new_updates():
           print update
-          show_message(update["repo"], update["desc"])
+          show_message("Update to %s"%update["repo"], "[%s]\n%s"%(update["ref"],update["desc"]))
     sleep(_CONFIG["check_freq"])
