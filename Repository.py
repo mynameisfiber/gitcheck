@@ -2,6 +2,7 @@
 import os
 from hashlib import md5
 from time import time
+import subprocess
 
 class Repository:
   def __init__(self, location, GIT_PATH="/usr/bin"):
@@ -9,6 +10,7 @@ class Repository:
     self.location = location
     self.name     = os.path.basename(self.location)
 
+    self.lockedremote = []
     self.update_repo()   
     self.remotes      = self.find_remotes()
     self.local_heads  = self.find_local_heads()
@@ -39,7 +41,7 @@ class Repository:
             update = {}
             update["repo"] = self.name
             update["ref"] = "%s/%s"%(remote,head)
-            update["desc-full"]  = self.get_commit_desc(remote, head)[0]
+            update["desc-full"]  = self.get_commit_desc(remote, head)
             update["desc"] = update["desc-full"][len(update["ref"])+3:].strip() #cleanup
             update["timestamp"] = time()
             update["new"] = True
@@ -54,25 +56,38 @@ class Repository:
     return hasupdate
 
   def _run_git_cmd(self, cmd):
-    pwd = os.getcwd()
-    os.chdir(self.location)
-    pd = os.popen("%s/git %s"%(self.GIT_PATH,cmd))
-    mesg = pd.readlines()
-    retval = pd.close()
-    os.chdir(pwd)
+    try:
+      env = {"GIT_SSH":os.path.join(os.getcwd(),"ssh_wrapper")}
+      pd = subprocess.Popen(("%s/git %s"%(self.GIT_PATH,cmd)).split(), 
+                            stdin=subprocess.PIPE, 
+                            stdout=subprocess.PIPE, 
+                            stderr=subprocess.PIPE,
+                            cwd=self.location, 
+                            env=env)
+      mesg, stderr = pd.communicate("\n"*10)
+      retval = pd.returncode
+    except subprocess.CalledProcessError, e:
+      mesg = e.output
+      retval = e.returncode
     return {"retval" : retval, "mesg" : mesg}
 
   def get_commit_desc(self, remote, head):
     output = self._run_git_cmd("show-branch %s/%s"%(remote, head))
-    if output["retval"] is None:
+    if output["retval"] == 0:
       return output["mesg"]
     else:
       return "Error: %s"%output["mesg"]
 
   def update_repo(self):
-    output = self._run_git_cmd("remote update")
-    if output["retval"] is not None:
-      raise Exception("%s: Problem updating remote"%self.name)
+    remote_path = os.path.join(self.location, ".git", "refs", "remotes")
+    remotes = {}
+    try:
+      for remote in os.listdir(remote_path):
+        output = self._run_git_cmd("remote update %s"%remote)
+        if output["retval"] != 0:
+          self.lockedremote.append(remote)
+    except OSError:
+      pass
 
   def find_local_heads(self):
     heads = {}
