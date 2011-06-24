@@ -30,7 +30,7 @@ class Repository:
 
   def check_updates(self):
     updates = {}
-    hasupdate = self.get_new_updates()
+    hasupdate = self.has_updates()
     for remote,refs in self.remotes.iteritems():
       for head, checksum in refs.iteritems():
         try:
