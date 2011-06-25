@@ -1,5 +1,16 @@
 #!/bin/env python
 
+_CONFIG = {"MAXDEPTH"        : 20,
+           "GIT_PATH"        : None,
+           "project_folders" : ['~/projects/','~/Documents/code/'],
+           "icon"            : "git.svg",
+           "check_freq"      : 1800}
+
+import signal
+import os
+from Repository import Repository
+from time import sleep
+
 try:
   import pynotify
   if not pynotify.init("icon-summary-body"):
@@ -15,15 +26,14 @@ except:
   growl = None
   growlNotifier = None
 
-import os
-from Repository import Repository
-from time import sleep
-
-_CONFIG = {"MAXDEPTH"        : 20,
-           "GIT_PATH"        : None,
-           "project_folders" : ['~/projects/','~/Documents/code/'],
-           "icon"            : "git.svg",
-           "check_freq"      : 1800}
+try:
+  from gui import gtktoolbar
+  gtkinstance = gtktoolbar.Indicator(_CONFIG["icon"])
+  gtkinstance.start()
+  signal.signal(signal.SIGTERM, gtkinstance.exit)
+  signal.signal(signal.SIGINT, gtkinstance.exit)
+except ImportError:
+  gtkinstance = None
 
 def find_repo(folder, maxdepth=-1):
   results = []
@@ -39,7 +49,11 @@ def find_repo(folder, maxdepth=-1):
         results += find_repo(full_item,maxdepth-1)
   return results
 
-def show_message(title, message,icon="git.svg"):
+def show_gui_updates(updates):
+  if gtkinstance is not None:
+    gtkinstance.add_updates(updates)
+
+def show_message(title, message, update, icon="git.svg"):
   icon = os.path.join(os.getcwd(),icon)
   message = message.replace('&', '&amp;')
   message = message.replace('<', '&lt;')
@@ -75,7 +89,8 @@ if __name__ == "__main__":
   while True:
     for repo in repos:
       if repo.check_updates():
+        show_gui_updates(repo.updates)
         for key, update in repo.get_new_updates():
-          show_message("Update to %s"%update["repo"], "[%s]\n%s"%(update["ref"],update["desc"]))
+          show_message("Update to %s"%update["repo"], "[%s]\n%s"%(update["ref"],update["desc"]),{key:update})
     sleep(_CONFIG["check_freq"])
     repo.update_repo()
