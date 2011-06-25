@@ -1,8 +1,8 @@
 #!/bin/env python
 
 _CONFIG = {"MAXDEPTH"        : 20,
-           "GIT_PATH"        : "/usr/bin",
-           "project_folders" : ['~/projects/',],
+           "GIT_PATH"        : None,
+           "project_folders" : ['~/projects/','~/Documents/code/'],
            "icon"            : "git.svg",
            "check_freq"      : 1800}
 
@@ -13,8 +13,18 @@ from time import sleep
 
 try:
   import pynotify
+  if not pynotify.init("icon-summary-body"):
+    print "Could not initialize notification system"
+    pynotify = None
 except ImportError:
   pynotify = None
+try:
+  import growl
+  growlNotifier = growl.GrowlNotifier("gitcheck",['Repo modified'])
+  growlNotifier.register()
+except:
+  growl = None
+  growlNotifier = None
 
 try:
   from gui import gtktoolbar
@@ -49,8 +59,8 @@ def show_message(title, message, update=None, icon="git.svg"):
   message = message.replace('<', '&lt;')
   message = message.replace('>', '&gt;')
 
+  print "%s: %s"%(title, message)
   if pynotify is not None:
-    print "%s: %s"%(title, message)
     msg = pynotify.Notification(title, 
                                 message,
                                 icon)
@@ -59,21 +69,22 @@ def show_message(title, message, update=None, icon="git.svg"):
         print "Could not display message: (%s) %s"%(title, message)
     except:
       print "Error communicating with notification daemon"
+
+  if growlNotifier is not None:
+    growlNotifier.notify('Repo modified',title,message)
                         
 
 if __name__ == "__main__":
-  if pynotify and not pynotify.init ("icon-summary-body"):
-    print "Could not initialize notification system"
-    exit(1)
-
   repos = []
   for project_folder in _CONFIG["project_folders"]:
-    raw_repos = find_repo(project_folder, maxdepth=_CONFIG["MAXDEPTH"])
-    for raw_repo in raw_repos:
-      repo = Repository(raw_repo,GIT_PATH=_CONFIG["GIT_PATH"])
-      repos.append(repo)
-      for ref in repo.lockedremote:
-        show_message("Warning", "%s: remote '%s' is not updatable.  Check that a passwordless SSH key exists for this remote"%(repo.name, ref))
+    if os.path.exists(os.path.expanduser(project_folder)):
+      print project_folder
+      raw_repos = find_repo(project_folder, maxdepth=_CONFIG["MAXDEPTH"])
+      for raw_repo in raw_repos:
+        repo = Repository(raw_repo,GIT_PATH=_CONFIG["GIT_PATH"])
+        repos.append(repo)
+        for ref in repo.lockedremote:
+          show_message("Warning", "%s: remote '%s' is not updatable.  Check that a passwordless SSH key exists for this remote"%(repo.name, ref))
 
   while True:
     for repo in repos:

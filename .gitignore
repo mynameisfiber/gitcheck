@@ -1,2 +1,5 @@
 .*sw[pom]
 *.py[co]
+*.so
+*/build/*
+
