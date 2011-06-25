@@ -1,6 +1,10 @@
 #!/bin/env python
 
-import pynotify
+try:
+  import pynotify
+except ImportError:
+  pynotify = None
+
 import os
 from Repository import Repository
 from time import sleep
@@ -31,19 +35,20 @@ def show_message(title, message,icon="git.svg"):
   message = message.replace('<', '&lt;')
   message = message.replace('>', '&gt;')
 
-  print "%s: %s"%(title, message)
-  msg = pynotify.Notification(title, 
-                              message,
-                              icon)
-  try:
-    if not msg.show():
-      print "Could not display message: (%s) %s"%(title, message)
-  except:
-    print "Error communicating with notification daemon"
+  if pynotify:
+    print "%s: %s"%(title, message)
+    msg = pynotify.Notification(title, 
+                                message,
+                                icon)
+    try:
+      if not msg.show():
+        print "Could not display message: (%s) %s"%(title, message)
+    except:
+      print "Error communicating with notification daemon"
                         
 
 if __name__ == "__main__":
-  if not pynotify.init ("icon-summary-body"):
+  if pynotify and not pynotify.init ("icon-summary-body"):
     print "Could not initialize notification system"
     exit(1)
 
