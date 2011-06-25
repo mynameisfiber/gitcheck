@@ -38,19 +38,22 @@ class Repository:
       for head, checksum in refs.iteritems():
         try:
           if self.local_heads[head] != checksum:
-            update = {}
-            update["repo"] = self.name
-            update["ref"] = "%s/%s"%(remote,head)
-            update["desc-full"]  = self.get_commit_desc(remote, head)
-            update["desc"] = update["desc-full"][len(update["ref"])+3:].strip() #cleanup
-            update["timestamp"] = time()
-            update["new"] = True
-            key = md5(update["desc"]).hexdigest()
+            try:
+              update = {}
+              update["repo"] = self.name
+              update["ref"] = "%s/%s"%(remote,head)
+              update["desc-full"]  = self.get_commit_desc(remote, head)
+              update["desc"] = update["desc-full"][len(update["ref"])+3:].strip() #cleanup
+              update["timestamp"] = time()
+              update["new"] = True
+              key = md5(update["desc"]).hexdigest()
 
-            if key not in self.updates_keys:
-              self.updates_keys.append(key)
-              self.updates.update( {md5(update["desc"]).hexdigest() : update} )
-              hasupdate |= True
+              if key not in self.updates_keys:
+                self.updates_keys.append(key)
+                self.updates.update( {md5(update["desc"]).hexdigest() : update} )
+                hasupdate |= True
+            except:
+              pass
         except KeyError:
           pass
     return hasupdate
@@ -64,7 +67,8 @@ class Repository:
                             stderr=subprocess.PIPE,
                             cwd=self.location, 
                             env=env)
-      mesg, stderr = pd.communicate("\n"*10)
+      mesg = pd.stdout.readlines()
+      pd.wait()
       retval = pd.returncode
     except subprocess.CalledProcessError, e:
       mesg = e.output
@@ -74,9 +78,9 @@ class Repository:
   def get_commit_desc(self, remote, head):
     output = self._run_git_cmd("show-branch %s/%s"%(remote, head))
     if output["retval"] == 0:
-      return output["mesg"]
+      return output["mesg"][0].strip()
     else:
-      return "Error: %s"%output["mesg"]
+      raise Exception(("Error: retval = %d"%output[retval])+output["mesg"])
 
   def update_repo(self):
     remote_path = os.path.join(self.location, ".git", "refs", "remotes")

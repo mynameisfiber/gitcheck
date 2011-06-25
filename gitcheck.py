@@ -43,7 +43,7 @@ def show_gui_updates(updates):
   if gtkinstance is not None:
     gtkinstance.add_updates(updates)
 
-def show_message(title, message, update, icon="git.svg"):
+def show_message(title, message, update=None, icon="git.svg"):
   icon = os.path.join(os.getcwd(),icon)
   message = message.replace('&', '&amp;')
   message = message.replace('<', '&lt;')
