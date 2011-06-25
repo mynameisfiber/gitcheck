@@ -20,7 +20,7 @@ from Repository import Repository
 from time import sleep
 
 _CONFIG = {"MAXDEPTH"        : 20,
-           "GIT_PATH"        : "/usr/bin",
+           "GIT_PATH"        : None,
            "project_folders" : ['~/projects/','~/Documents/code/'],
            "icon"            : "git.svg",
            "check_freq"      : 1800}
@@ -45,8 +45,8 @@ def show_message(title, message,icon="git.svg"):
   message = message.replace('<', '&lt;')
   message = message.replace('>', '&gt;')
 
-  if pynotify:
-    print "%s: %s"%(title, message)
+  print "%s: %s"%(title, message)
+  if pynotify is not None:
     msg = pynotify.Notification(title, 
                                 message,
                                 icon)
@@ -56,14 +56,15 @@ def show_message(title, message,icon="git.svg"):
     except:
       print "Error communicating with notification daemon"
 
-  if growlNotifier:
+  if growlNotifier is not None:
     growlNotifier.notify('Repo modified',title,message)
                         
 
 if __name__ == "__main__":
   repos = []
   for project_folder in _CONFIG["project_folders"]:
-    if os.path.exists(project_folder):
+    if os.path.exists(os.path.expanduser(project_folder)):
+      print project_folder
       raw_repos = find_repo(project_folder, maxdepth=_CONFIG["MAXDEPTH"])
       for raw_repo in raw_repos:
         repo = Repository(raw_repo,GIT_PATH=_CONFIG["GIT_PATH"])

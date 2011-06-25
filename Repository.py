@@ -5,7 +5,7 @@ from time import time
 import subprocess
 
 class Repository:
-  def __init__(self, location, GIT_PATH="/usr/bin"):
+  def __init__(self, location, GIT_PATH=None):
     self.GIT_PATH = GIT_PATH
     self.location = location
     self.name     = os.path.basename(self.location)
@@ -35,6 +35,7 @@ class Repository:
     updates = {}
     hasupdate = self.has_updates()
     for remote,refs in self.remotes.iteritems():
+      print remote
       for head, checksum in refs.iteritems():
         try:
           if self.local_heads[head] != checksum:
@@ -58,7 +59,11 @@ class Repository:
   def _run_git_cmd(self, cmd):
     try:
       env = {"GIT_SSH":os.path.join(os.getcwd(),"ssh_wrapper")}
-      pd = subprocess.Popen(("%s/git %s"%(self.GIT_PATH,cmd)).split(), 
+      if self.GIT_PATH is not None:
+        git = os.path.join(self.GIT_PATH,'git')
+      else:
+        git = 'git'
+      pd = subprocess.Popen(("%s %s"%(git,cmd)).split(), 
                             stdin=subprocess.PIPE, 
                             stdout=subprocess.PIPE, 
                             stderr=subprocess.PIPE,
