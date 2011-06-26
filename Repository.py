@@ -5,37 +5,38 @@ from time import time
 import subprocess
 
 class Repository:
-  def __init__(self, location, GIT_PATH=None):
-    self.GIT_PATH = GIT_PATH
-    self.location = location
+  def __init__(self, location, config=None):
+    self.config   = config
+    self.location = os.path.expanduser(location)
     self.name     = os.path.basename(self.location)
 
     self.lockedremote = []
-    self.update_repo()   
+    self.refresh_repo()   
     self.remotes      = self.find_remotes()
     self.local_heads  = self.find_local_heads()
 
     self.updates = {}
-    self.updates_keys = []
-    self.check_updates()
+    self.fresh_updates = []
+    self.new_updates = []
 
-  def has_updates(self):
-    for key, data in self.updates.iteritems():
-      if data["new"]:
-        return True
-    return False
+  def get_updates(self):
+    for key, update in self.updates.iteritems():
+      yield (key, update)
 
   def get_new_updates(self):
-    for key, data in self.updates.iteritems():
-      if data["new"]:
-        yield (key, data)
-        data["new"] = False
+    for key in self.new_updates:
+      yield (key, self.updates[key])
+      self.updates[key] = False
+
+  def get_fresh_updates(self):
+    for key in self.fresh_updates:
+      yield (key, self.updates[key])
 
   def check_updates(self):
-    updates = {}
-    hasupdate = self.has_updates()
+    prev_updates_keys = self.updates.keys()
+    self.fresh_updates = []
+    self.new_updates = []
     for remote,refs in self.remotes.iteritems():
-      print remote
       for head, checksum in refs.iteritems():
         try:
           if self.local_heads[head] != checksum:
@@ -46,24 +47,27 @@ class Repository:
               update["desc-full"]  = self.get_commit_desc(remote, head)
               update["desc"] = update["desc-full"][len(update["ref"])+3:].strip() #cleanup
               update["timestamp"] = time()
-              update["new"] = True
-              key = md5(update["desc"]).hexdigest()
+              key = md5(update["repo"]+update["ref"]+update["desc"]).hexdigest()
 
-              if key not in self.updates_keys:
-                self.updates_keys.append(key)
-                self.updates.update( {md5(update["desc"]).hexdigest() : update} )
-                hasupdate |= True
+              update["fresh"] = True
+              self.fresh_updates.append(key)
+              if key not in prev_updates_keys:
+                update["new"] = True
+                self.new_updates.append(key)
+              else:
+                update["new"] = False
+
+              self.updates.update( {key : update} )
             except:
               pass
         except KeyError:
           pass
-    return hasupdate
 
   def _run_git_cmd(self, cmd):
     try:
       env = {"GIT_SSH":os.path.join(os.getcwd(),"ssh_wrapper")}
-      if self.GIT_PATH is not None:
-        git = os.path.join(self.GIT_PATH,'git')
+      if self.config is not None and "GIT_PATH" in self.config and self.config["GIT_PATH"] is not None:
+        git = os.path.join(self.config["GIT_PATH"],'git')
       else:
         git = 'git'
       pd = subprocess.Popen(("%s %s"%(git,cmd)).split(), 
@@ -87,7 +91,7 @@ class Repository:
     else:
       raise Exception(("Error: retval = %d"%output[retval])+output["mesg"])
 
-  def update_repo(self):
+  def refresh_repo(self):
     remote_path = os.path.join(self.location, ".git", "refs", "remotes")
     remotes = {}
     try:
@@ -118,3 +122,6 @@ class Repository:
       return remotes
     except OSError:
       return {}
+
+  def __getitem__(self, item):
+    return self.updates[item]
