@@ -3,13 +3,12 @@
 _CONFIG = {"GIT_PATH"        : None,  #None = use system $PATH
            "project_folders" : [('~/projects/',       1),
                                 ('~/Documents/code/', 5)],
-           "icon"            : "git.svg",
-           "check_freq"      : 5}
+           "icon"            : "/home/fiber/projects/gitcheck/git.svg",
+           "check_freq"      : 30}
 
 import signal
 import os
 from Repositories import Repositories
-from time import sleep
 import threading
 
 try:
@@ -41,6 +40,7 @@ class gitcheck(threading.Thread):
     threading.Thread.__init__(self)
     self.config = config
     self.running = False
+    self.timer = threading.Event()
 
     self.repositories = None
     self.setup_repos()
@@ -68,8 +68,14 @@ class gitcheck(threading.Thread):
       for key, update in self.repositories.get_new_updates():
         print "Is this actually new? ", update["new"]
         self.show_message("Update to %s"%update["repo"], "[%s]\n%s"%(update["ref"],update["desc"]),{key:update})
-      sleep(_CONFIG["check_freq"])
+      self.timer.wait(_CONFIG["check_freq"])
+      if self.timer.is_set():
+        return
       self.repositories.refresh_repositories()
+
+  def exit(self):
+    self.running = False
+    self.timer.set()
 
   def find_repo(self, folder, maxdepth=-1):
     results = []
@@ -86,8 +92,7 @@ class gitcheck(threading.Thread):
           results += self.find_repo(full_item,maxdepth-1)
     return results
   
-  def show_message(self, title, message, update=None, icon="git.svg"):
-    icon = os.path.join(os.getcwd(),icon)
+  def show_message(self, title, message, update=None):
     message = message.replace('&', '&amp;')
     message = message.replace('<', '&lt;')
     message = message.replace('>', '&gt;')
@@ -96,7 +101,7 @@ class gitcheck(threading.Thread):
     if pynotify is not None:
       msg = pynotify.Notification(title, 
                                   message,
-                                  icon)
+                                  self.config["icon"])
       try:
         if not msg.show():
           print "Could not display message: (%s) %s"%(title, message)
@@ -109,5 +114,11 @@ class gitcheck(threading.Thread):
 
 if __name__ == "__main__":
   checker = gitcheck(_CONFIG)
-  checker.start()
+  try:
+    td = checker.start()
+    while True:
+      checker.join(5)
+  except (KeyboardInterrupt, SystemExit):
+    checker.exit()
+    exit(1)
   

@@ -5,10 +5,12 @@ import threading
 import signal
 import os
 gtk.threads_init()
+from messaging.message import message
 
-class Indicator(threading.Thread):
-  def __init__(self, icon):
-    threading.Thread.__init__(self)
+class Indicator(message):
+  def __init__(self, config):
+		message.__init__(config)
+    self.icon = message.config["icon"]
     signal.signal(signal.SIGTERM, self.exit)
     self.updates = {}
     self.icon = icon
@@ -18,18 +20,11 @@ class Indicator(threading.Thread):
     self.indicator = appindicator.Indicator("checkgitgui", "checkgitgui", appindicator.CATEGORY_APPLICATION_STATUS)
     self.indicator.set_status(appindicator.STATUS_ACTIVE)
 
-    self.indicator.set_icon(os.path.join(os.getcwd(), self.icon))
+    self.indicator.set_icon(self.icon)
     self.indicator.set_menu(self.setup_menu())
 
-  def add_updates(self, updates):
+  def fresh_updates_message(self, updates):
     self.updates.update(updates)
-    self.indicator.set_menu(self.setup_menu())
-
-  def remove_update(self, item):
-    try:
-      del self.updates[item.update_key]
-    except KeyError:
-      pass
     self.indicator.set_menu(self.setup_menu())
 
   def foo(self, item):
@@ -45,7 +40,6 @@ class Indicator(threading.Thread):
     for key, update in self.updates.iteritems():
       updateitem = gtk.MenuItem("%s: [%s]"%(update["repo"], update["ref"]))
       updateitem.update_key = key
-      updateitem.connect("activate", self.remove_update)
       updateitem.show()
       menu.append(updateitem)
 
