@@ -4,6 +4,7 @@ _CONFIG = {"GIT_PATH"        : None,  #None = use system $PATH
            "project_folders" : [('~/projects/',       1),
                                 ('~/Documents/code/', 5)],
            "icon"            : "/home/fiber/projects/gitcheck/git.svg",
+           "pluginpath"      : ["/home/fiber/projects/gitcheck/messaging/", ],
            "check_freq"      : 30}
 
 import signal

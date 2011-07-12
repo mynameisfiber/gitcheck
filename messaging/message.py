@@ -24,8 +24,8 @@ class message(threading.Thread):
   def updates_message(self, updates):
     pass
 
-	def start(self):
-	  return False
+  def start(self):
+    return False
 
-	def exit(self):
-	  self.running = False
+  def exit(self):
+    self.running = False

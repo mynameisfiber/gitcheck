@@ -5,11 +5,11 @@ import threading
 import signal
 import os
 gtk.threads_init()
-from messaging.message import message
+from message import message
 
 class Indicator(message):
   def __init__(self, config):
-		message.__init__(config)
+    message.__init__(config)
     self.icon = message.config["icon"]
     signal.signal(signal.SIGTERM, self.exit)
     self.updates = {}
