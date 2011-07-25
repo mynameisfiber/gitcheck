@@ -10,5 +10,4 @@ History
 """
 
 from Growl import *
-
-
+__modulename__ = "Growl"

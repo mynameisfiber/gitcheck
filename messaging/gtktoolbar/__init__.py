@@ -1,3 +1,4 @@
 #!/bin/env python
 
-import gtktoolbar
+from gtktoolbar import *
+__modulename__ = "Indicator"
