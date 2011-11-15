@@ -1,2 +1,3 @@
 #!/bin/sh
-ssh -oPasswordAuthentication=no $*
+
+ssh -oPasswordAuthentication=no -oNumberOfPasswordPrompts=0 $*

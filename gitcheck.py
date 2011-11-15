@@ -2,7 +2,7 @@
 
 _CONFIG = {"MAXDEPTH"        : 20,
            "GIT_PATH"        : None,
-           "project_folders" : ['~/projects/','~/Documents/code/'],
+           "project_folders" : ['~/projects/','~/Documents/code/', '~/work/'],
            "icon"            : "git.svg",
            "check_freq"      : 1800}
 

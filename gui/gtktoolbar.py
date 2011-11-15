@@ -26,6 +26,7 @@ class Indicator(threading.Thread):
     self.indicator.set_menu(self.setup_menu())
 
   def remove_update(self, item):
+    os.system("gnome-open '%s'"%self.updates[item.update_key]['location'])
     try:
       del self.updates[item.update_key]
     except KeyError:

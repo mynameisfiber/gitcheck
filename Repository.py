@@ -42,6 +42,7 @@ class Repository:
             try:
               update = {}
               update["repo"] = self.name
+              update["location"] = self.location
               update["ref"] = "%s/%s"%(remote,head)
               update["desc-full"]  = self.get_commit_desc(remote, head)
               update["desc"] = update["desc-full"][len(update["ref"])+3:].strip() #cleanup
